@@ -1,42 +1,43 @@
 # Copyright 2014 Vasiliy Tolstov <v.tolstov@selfip.ru>
+# Copyright 2015 Ivan L <abyss.7@gmail.com>
 # Distributed under the terms of the GNU General Public License v2
 
-require entrance
+require enlightenment
 
-PLATFORMS="~amd64 ~x86"
+SUMMARY="Enlightenment Display Manager"
+
+LICENCES="GPL-3"
 SLOT="0"
-LANGS=""
-
-MYOPTIONS="doc pam grub systemd consolekit ekbd
-linguas: ${LANGS}"
+PLATFORMS="~amd64"
+MYOPTIONS="pam ekbd consolekit systemd
+    grub2 [[ description = [ Enable GRUB2 reboot feature. But you need to add 'GRUB_DEFAULT=saved' to /etc/default/grub ] ]]
+"
 
 DEPENDENCIES="
     build:
-        doc? ( app-doc/doxygen )
-        sys-devel/gettext
-        virtual/pkg-config[>=0.20]
+        sys-devel/gettext[>=0.12.1]
     build+run:
-        enlightenment-platform/efl[>=1.15]
-        x11-apps/xauth
-        x11-apps/sessreg
         app-admin/sudo
+        enlightenment-platform/efl[>=1.15]
+        # x11-apps/sessreg
+        # x11-apps/xauth
+        pam? ( sys-libs/pam )
+        systemd? ( sys-apps/systemd )
 "
 
-RESTRICT="test" # require X
+RESTRICT="test"  # requires X
 
-src_prepare() {
-    edo sed -i "s|systemddir = /usr/lib/systemd/system/|systemddir = /usr/$(exhost --target)/lib/systemd/system/|g" data/Makefile.mk
-    edo sed -e '/"session_path"/ s|:.*|: "/usr/local/sbin:/usr/local/bin:/usr/bin";|' \
-      -e '/"shutdown"/ s|:.*|: "systemctl poweroff";|' \
-      -e '/"reboot"/ s|:.*|: "systemctl reboot";|' \
-      -e '/"suspend"/ s|:.*|: "systemctl suspend";|' \
-      -i data/entrance.conf.in
-    NOCONFIGURE=NoThanks edo ./autogen.sh
-}
+DEFAULT_SRC_CONFIGURE_OPTION_ENABLES=(
+    'consolekit'
+    'ekbd'
+    'grub2'
+    'pam'
+    'systemd'
+)
 
 src_install() {
     default
-    edo chmod 750 "${IMAGE}/etc/sudoers.d/"
+
     edo install -Dm644 "data/entrance.arch" "${IMAGE}/etc/pam.d/entrance"
-    #pamd_mimic_system ${PN} auth session
+    # edo chmod 750 "${IMAGE}/etc/sudoers.d/"
 }
