@@ -1,0 +1,13 @@
+# Coyright 2014 Vasiliy Tolstov <v.tolstov@selfip.ru>
+# Distributed under the terms of the GNU General Public License v2
+
+require systemd-service pam
+
+SUMMARY="An EFL based display manager"
+HOMEPAGE="http://www.enlightenment.org/"
+
+SCM_REPOSITORY="git://git.enlightenment.org/misc/entrance.git"
+require scm-git
+
+#DOWNLOADS="http://download.enlightenment.org/rel/apps/${PN}/${PNV}.tar.gz"
+LICENCES="GPL-2"

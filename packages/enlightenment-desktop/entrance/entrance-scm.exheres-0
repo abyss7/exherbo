@@ -1,0 +1,42 @@
+# Copyright 2014 Vasiliy Tolstov <v.tolstov@selfip.ru>
+# Distributed under the terms of the GNU General Public License v2
+
+require entrance
+
+PLATFORMS="~amd64 ~x86"
+SLOT="0"
+LANGS=""
+
+MYOPTIONS="doc pam grub systemd consolekit ekbd
+linguas: ${LANGS}"
+
+DEPENDENCIES="
+    build:
+        doc? ( app-doc/doxygen )
+        sys-devel/gettext
+        virtual/pkg-config[>=0.20]
+    build+run:
+        enlightenment-platform/efl[>=1.15]
+        x11-apps/xauth
+        x11-apps/sessreg
+        app-admin/sudo
+"
+
+RESTRICT="test" # require X
+
+src_prepare() {
+    edo sed -i "s|systemddir = /usr/lib/systemd/system/|systemddir = /usr/$(exhost --target)/lib/systemd/system/|g" data/Makefile.mk
+    edo sed -e '/"session_path"/ s|:.*|: "/usr/local/sbin:/usr/local/bin:/usr/bin";|' \
+      -e '/"shutdown"/ s|:.*|: "systemctl poweroff";|' \
+      -e '/"reboot"/ s|:.*|: "systemctl reboot";|' \
+      -e '/"suspend"/ s|:.*|: "systemctl suspend";|' \
+      -i data/entrance.conf.in
+    NOCONFIGURE=NoThanks edo ./autogen.sh
+}
+
+src_install() {
+    default
+    edo chmod 750 "${IMAGE}/etc/sudoers.d/"
+    edo install -Dm644 "data/entrance.arch" "${IMAGE}/etc/pam.d/entrance"
+    #pamd_mimic_system ${PN} auth session
+}
