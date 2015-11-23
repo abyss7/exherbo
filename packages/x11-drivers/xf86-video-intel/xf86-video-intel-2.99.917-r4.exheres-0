@@ -1,0 +1,95 @@
+# Copyright 2007 Alexander Færøy <ahf@exherbo.org>
+# Copyright 2008, 2009, 2010 Ingmar Vanhassel <ingmar@exherbo.org>
+# Copyright 2015 Ivan L <abyss.7@gmail.com>
+# Distributed under the terms of the GNU General Public License v2
+
+require xorg
+
+SUMMARY="Xorg video driver for Intel-based cards"
+PLATFORMS="~amd64"
+LICENCES="MIT"
+SLOT="0"
+MYOPTIONS="
+    tools  [[ description = [ Build intel-backlight-helper and intel-virtual-output tool ] ]]
+    ( providers: eudev systemd ) [[ number-selected = exactly-one ]]
+"
+
+DEPENDENCIES="
+    build:
+        x11-proto/dri2proto[>=2.6]
+        x11-proto/dri3proto
+        x11-proto/fontsproto
+        x11-proto/glproto
+        x11-proto/presentproto
+        x11-proto/randrproto
+        x11-proto/renderproto
+        x11-proto/videoproto
+        x11-proto/xextproto[>=7.1]
+        x11-proto/xf86driproto
+        x11-proto/xproto
+    build+run:
+        media-libs/libpng:= [[ note = [ needed for tests ] ]]
+        x11-dri/libdrm[>=2.4.52][video_drivers:intel(+)]
+        x11-dri/mesa[>=7.3_rc2][video_drivers:intel(+)]
+        x11-libs/cairo[X]   [[ note = [ needed for tests ] ]]
+        x11-libs/libX11[xcb(+)]
+        x11-libs/libXext
+        x11-libs/libXrandr
+        x11-libs/libXrender
+        x11-libs/libXv
+        x11-libs/libXvMC
+        x11-libs/libpciaccess[>=0.10]
+        x11-libs/libxcb
+        x11-libs/libxshmfence
+        x11-libs/pixman:1[>=0.27.1]
+        x11-server/xorg-server[>=1.6][dri2(+)]
+        x11-utils/xcb-util [[ note = [ works with 0.3.8, too ] ]]
+        tools? (
+            x11-libs/libXcursor
+            x11-libs/libXdamage
+            x11-libs/libXfixes
+            x11-libs/libXinerama
+            x11-libs/libXtst
+        ) [[ note = [ Automagic deps for intel-virtual-output ] ]]
+        providers:eudev? ( sys-apps/eudev )
+        providers:systemd? ( sys-apps/systemd ) [[ note = [ Automagic dep, enables udev-based monitor hotplug detection ] ]]
+"
+
+DEFAULT_SRC_CONFIGURE_PARAMS=(
+    --disable-dga
+    --disable-xaa
+    --disable-uxa
+    --enable-backlight
+    --enable-dri{,1,2,3}
+    --enable-kms
+    --enable-sna
+    --enable-udev
+    --enable-ums
+)
+
+DEFAULT_SRC_CONFIGURE_OPTION_ENABLES+=(
+    'tools'
+    'tools backlight-helper'
+)
+
+DEFAULT_SRC_PREPARE_PATCHES=(
+    "${FILES}"/12af8a575d1518d40416f83195049157c3a062a5.patch
+    "${FILES}"/xf86-video-intel-2.99.917-sna-Protect-against-ABI-breakage-in-recent-versions-.patch
+)
+
+src_prepare() {
+    default
+
+    # fix socket path for bumblebee.socket
+    if ever at_least 2.99.917; then
+        edo sed \
+            -e 's:/var/run:/run:g' \
+            -i tools/virtual.c
+    fi
+}
+
+src_install() {
+    default
+
+    option tools || edo rm -rf "${IMAGE}"/usr/bin
+}
